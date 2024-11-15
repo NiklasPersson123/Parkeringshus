@@ -28,13 +28,19 @@ namespace Parkeringshus
             double requiredSpace = vehicle.ParkingSpace();
             if (OccupiedSpaces + requiredSpace <= TotalSpaces)
             {
-                if (vehicle is Motorcycle mc && TryParkMotorcycle(mc))
+                if (vehicle is Motorcycle mc)
                 {
-                    return;
+                    if (TryParkMotorcycle(mc))
+                    {
+                        return;
+                    }
                 }
-                vehicles.Add(vehicle);
-                OccupiedSpaces += requiredSpace;
-                Console.WriteLine($"Vehicle {vehicle.RegistrationNumber} parked successfully.");
+                else
+                {
+                    vehicles.Add(vehicle); 
+                    OccupiedSpaces += requiredSpace;
+                    Console.WriteLine($"Vehicle {vehicle.RegistrationNumber} parked successfully.");
+                }
             }
             else
             {
@@ -46,18 +52,18 @@ namespace Parkeringshus
         {
             foreach (var spot in motorcycleSpots)
             {
-                if (spot.Value.Count < 2)
+                if (spot.Value.Count < 2) // Tittar om det finns en ledig MC-plats
                 {
                     spot.Value.Add(motorcycle);
-                    vehicles.Add(motorcycle);
+                    OccupiedSpaces += 0.5; // Bara MC påverkar delad plats
                     Console.WriteLine($"Motorcycle {motorcycle.RegistrationNumber} shares spot {spot.Key}.");
                     return true;
                 }
             }
 
+            // Om ingen delad plats är tillgänglig, skapa en ny
             int newSpot = motorcycleSpots.Count + 1;
             motorcycleSpots[newSpot] = new List<Motorcycle> { motorcycle };
-            vehicles.Add(motorcycle);
             OccupiedSpaces += 0.5;
             Console.WriteLine($"Motorcycle {motorcycle.RegistrationNumber} parked at new spot {newSpot}.");
             return true;
@@ -65,7 +71,7 @@ namespace Parkeringshus
 
         public void RemoveVehicle(string registrationNumber)
         {
-            var vehicle = vehicles.FirstOrDefault(v => v.RegistrationNumber == registrationNumber);
+            var vehicle = vehicles.FirstOrDefault(v => v.RegistrationNumber == registrationNumber); //Lambdauttryck!!! som används för att specifiera sökvillkor i detta fall regnr
             if (vehicle != null)
             {
                 double parkingDuration = (DateTime.Now - vehicle.ParkingTime).TotalMinutes;
@@ -82,24 +88,38 @@ namespace Parkeringshus
 
         public void DisplayParkedVehicles()
         {
-            int spotNumber = 1;
-            foreach (var vehicle in vehicles)
+            Console.WriteLine("Displaying all parked vehicles:");
+            int spotNumber = 1; 
+            foreach (var spot in motorcycleSpots)
+            {
+                Console.Write($"Spot {spotNumber}: ");
+                for (int i = 0; i < spot.Value.Count; i++)
+                {
+                    var motorcycle = spot.Value[i];
+                    Console.Write($"{motorcycle.RegistrationNumber} ({motorcycle.Color}, Brand: {motorcycle.Brand})");
+                    if (i < spot.Value.Count - 1)
+                    {
+                        Console.Write(", ");
+                    }
+                }
+                Console.WriteLine(); // Ny rad efter motorcyklar i denna plats
+                spotNumber++; // Öka platsnumret efter en motorcykelplats
+            }
+
+            // Visa andra fordon som inte är motorcyklar (bilar och bussar)
+            foreach (var vehicle in vehicles.Where(v => !(v is Motorcycle))) //"Where" filtrerar en sekvens av värden 
             {
                 if (vehicle is Car car)
                 {
                     string carType = car.IsElectric ? "Electric Car" : "Petrol Car";
                     Console.WriteLine($"Spot {spotNumber}: Car {vehicle.RegistrationNumber} - {vehicle.Color} ({carType})");
-                }
-                else if (vehicle is Motorcycle motorcycle)
-                {
-                    Console.WriteLine($"Spot {spotNumber}: Motorcycle {vehicle.RegistrationNumber} - {vehicle.Color} (Brand: {motorcycle.Brand})");
+                    spotNumber++; // Öka platsnumret för bilen
                 }
                 else if (vehicle is Bus bus)
                 {
                     Console.WriteLine($"Spot {spotNumber}-{spotNumber + 1}: Bus {vehicle.RegistrationNumber} - {vehicle.Color} (Passengers: {bus.PassengerCount})");
-                    spotNumber++;
+                    spotNumber += 2; // Bussar tar två platser
                 }
-                spotNumber++;
             }
         }
     }

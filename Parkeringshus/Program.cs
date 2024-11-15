@@ -28,7 +28,7 @@
                             Console.Write("Enter registration number: ");
                             string regNumber = Console.ReadLine().ToUpper();
                             parkingLot.RemoveVehicle(regNumber);
-                            Console.Clear();
+                            
                             break;
                         case 3:
                             Console.Clear();
